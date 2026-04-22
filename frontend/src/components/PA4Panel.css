@@ -1,0 +1,62 @@
+.pa4-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pa4-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.pa4-tab {
+  min-width: 84px;
+}
+
+.pa4-tab.active {
+  background: #22c55e;
+}
+
+.pa4-animator,
+.pa4-attack-box {
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.pa4-block-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.pa4-block {
+  text-align: left;
+  border: 1px solid #334155;
+  background: #0f172a;
+  font-family: monospace;
+  line-height: 1.35;
+}
+
+.pa4-block:hover {
+  border-color: #38bdf8;
+}
+
+.pa4-block-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #93c5fd;
+}
+
+.pa4-arrow {
+  color: #38bdf8;
+  margin: 4px 0;
+}
+
+.pa4-red {
+  color: #f87171;
+  font-weight: 700;
+}
