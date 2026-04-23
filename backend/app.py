@@ -43,14 +43,14 @@ from PA8.app_pa8 import pa8
 app = Flask(__name__)
 CORS(app)
 
-app.register_blueprint(pa1)
-app.register_blueprint(pa2)
-app.register_blueprint(pa3)
-app.register_blueprint(pa4)
-app.register_blueprint(pa5)
-app.register_blueprint(pa6)
-app.register_blueprint(pa7)
-app.register_blueprint(pa8)
+app.register_blueprint(pa1)                      # routes: /prg, /test
+app.register_blueprint(pa2)                      # routes: /prf
+app.register_blueprint(pa3, url_prefix="/cpa")   # routes: /cpa/challenge, etc.
+app.register_blueprint(pa4, url_prefix="/pa4")
+app.register_blueprint(pa5, url_prefix="/pa5")
+app.register_blueprint(pa6, url_prefix="/pa6")
+app.register_blueprint(pa7, url_prefix="/pa7")
+app.register_blueprint(pa8, url_prefix="/pa8")
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
