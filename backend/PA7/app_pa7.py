@@ -32,7 +32,7 @@ def _get_compress_fn(name: str):
     return COMPRESS_FNS.get(name, xor_compress)
 
 
-@pa7.route("/pa7/hash", methods=["POST"])
+@pa7.route("/hash", methods=["POST"])
 def pa7_hash():
     try:
         data = request.get_json(force=True)
@@ -54,7 +54,7 @@ def pa7_hash():
         return jsonify({"error": str(e)}), 500
 
 
-@pa7.route("/pa7/trace", methods=["POST"])
+@pa7.route("/trace", methods=["POST"])
 def pa7_trace():
     """Full chain trace — used by the MD Visualizer."""
     try:
@@ -73,7 +73,7 @@ def pa7_trace():
         return jsonify({"error": str(e)}), 500
 
 
-@pa7.route("/pa7/compress-compare", methods=["POST"])
+@pa7.route("/compress-compare", methods=["POST"])
 def pa7_compress_compare():
     """Compare xor and rotate compress functions on the same message."""
     try:
@@ -99,7 +99,7 @@ def pa7_compress_compare():
         return jsonify({"error": str(e)}), 500
 
 
-@pa7.route("/pa7/collision-demo", methods=["POST"])
+@pa7.route("/collision-demo", methods=["POST"])
 def pa7_collision_demo():
     """
     Construct compress collision → show full MD collision.

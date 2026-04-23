@@ -7,7 +7,7 @@ from modes import MODES
 
 pa4 = Blueprint("pa4", __name__)
 
-@pa4.route("/pa4/encrypt", methods=["POST"])
+@pa4.route("/encrypt", methods=["POST"])
 def pa4_encrypt_api():
     data = request.get_json(force=True)
 
@@ -22,7 +22,7 @@ def pa4_encrypt_api():
         return jsonify({"error": str(e)}), 400
 
 
-@pa4.route("/pa4/decrypt", methods=["POST"])
+@pa4.route("/decrypt", methods=["POST"])
 def pa4_decrypt_api():
     data = request.get_json(force=True)
 
@@ -52,7 +52,7 @@ def pa4_decrypt_api():
         return jsonify({"error": str(e)}), 400
 
 
-@pa4.route("/pa4/trace", methods=["POST"])
+@pa4.route("/trace", methods=["POST"])
 def pa4_trace_api():
     data = request.get_json(force=True)
 
@@ -67,7 +67,7 @@ def pa4_trace_api():
         return jsonify({"error": str(e)}), 400
 
 
-@pa4.route("/pa4/flip-bit", methods=["POST"])
+@pa4.route("/flip-bit", methods=["POST"])
 def pa4_flip_bit_api():
     data = request.get_json(force=True)
 
@@ -90,7 +90,7 @@ def pa4_flip_bit_api():
         return jsonify({"error": str(e)}), 400
 
 
-@pa4.route("/pa4/attack/cbc-iv-reuse", methods=["POST"])
+@pa4.route("/attack/cbc-iv-reuse", methods=["POST"])
 def pa4_attack_cbc_iv_reuse_api():
     data = request.get_json(force=True)
 
@@ -109,7 +109,7 @@ def pa4_attack_cbc_iv_reuse_api():
         return jsonify({"error": str(e)}), 400
 
 
-@pa4.route("/pa4/attack/ofb-keystream-reuse", methods=["POST"])
+@pa4.route("/attack/ofb-keystream-reuse", methods=["POST"])
 def pa4_attack_ofb_keystream_reuse_api():
     data = request.get_json(force=True)
 

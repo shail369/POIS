@@ -31,7 +31,7 @@ from dlp_hash import (
 pa8 = Blueprint("pa8", __name__)
 
 
-@pa8.route("/pa8/group-info", methods=["GET"])
+@pa8.route("/group-info", methods=["GET"])
 def pa8_group_info():
     """Return DLP group parameters — called once on PA8 panel mount."""
     try:
@@ -41,7 +41,7 @@ def pa8_group_info():
         return jsonify({"error": str(e)}), 500
 
 
-@pa8.route("/pa8/hash", methods=["POST"])
+@pa8.route("/hash", methods=["POST"])
 def pa8_hash():
     try:
         data    = request.get_json(force=True)
@@ -59,7 +59,7 @@ def pa8_hash():
         return jsonify({"error": str(e)}), 500
 
 
-@pa8.route("/pa8/trace", methods=["POST"])
+@pa8.route("/trace", methods=["POST"])
 def pa8_trace():
     """Hash + chain trace for visualization."""
     try:
@@ -76,7 +76,7 @@ def pa8_trace():
         return jsonify({"error": str(e)}), 500
 
 
-@pa8.route("/pa8/birthday-attack", methods=["POST"])
+@pa8.route("/birthday-attack", methods=["POST"])
 def pa8_birthday_attack():
     """
     Run birthday attack on truncated DLP compress.
@@ -95,7 +95,7 @@ def pa8_birthday_attack():
         return jsonify({"error": str(e)}), 500
 
 
-@pa8.route("/pa8/security-argument", methods=["GET"])
+@pa8.route("/security-argument", methods=["GET"])
 def pa8_security_argument():
     """Return the formal collision-resistance proof steps."""
     try:

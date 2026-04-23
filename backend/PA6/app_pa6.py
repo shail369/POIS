@@ -33,7 +33,7 @@ pa6 = Blueprint("pa6", __name__)
 # Encrypt (Encrypt-then-MAC)
 # ---------------------------------------------------------------------------
 
-@pa6.route("/pa6/encrypt", methods=["POST"])
+@pa6.route("/encrypt", methods=["POST"])
 def cca_encrypt_api():
     try:
         data    = request.get_json(force=True)
@@ -63,7 +63,7 @@ def cca_encrypt_api():
 # Decrypt (Verify-then-Decrypt)
 # ---------------------------------------------------------------------------
 
-@pa6.route("/pa6/decrypt", methods=["POST"])
+@pa6.route("/decrypt", methods=["POST"])
 def cca_decrypt_api():
     try:
         data  = request.get_json(force=True)
@@ -88,7 +88,7 @@ def cca_decrypt_api():
 # Malleability demo (CPA vs CCA side-by-side)
 # ---------------------------------------------------------------------------
 
-@pa6.route("/pa6/malleability", methods=["POST"])
+@pa6.route("/malleability", methods=["POST"])
 def malleability_api():
     """
     Returns both CPA malleability result AND CCA rejection result
@@ -110,7 +110,7 @@ def malleability_api():
 # IND-CCA2 game
 # ---------------------------------------------------------------------------
 
-@pa6.route("/pa6/cca2-game", methods=["POST"])
+@pa6.route("/cca2-game", methods=["POST"])
 def cca2_game_api():
     try:
         data   = request.get_json(force=True)
@@ -129,7 +129,7 @@ def cca2_game_api():
 # Key-separation demo
 # ---------------------------------------------------------------------------
 
-@pa6.route("/pa6/key-separation", methods=["POST"])
+@pa6.route("/key-separation", methods=["POST"])
 def key_separation_api():
     try:
         data    = request.get_json(force=True)

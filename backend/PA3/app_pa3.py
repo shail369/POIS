@@ -9,7 +9,7 @@ pa3 = Blueprint("pa3", __name__)
 
 CPA_SESSIONS = {}
 
-@pa3.route("/cpa/enc", methods=["POST"])
+@pa3.route("/enc", methods=["POST"])
 def cpa_enc_api():
     cpa = CPA()
     data = request.get_json(force=True)
@@ -28,7 +28,7 @@ def cpa_enc_api():
     })
 
 
-@pa3.route("/cpa/dec", methods=["POST"])
+@pa3.route("/dec", methods=["POST"])
 def cpa_dec_api():
     cpa = CPA()
     data = request.get_json(force=True)
@@ -50,7 +50,7 @@ def cpa_dec_api():
         return jsonify({"error": str(e)}), 400
 
 
-@pa3.route("/cpa/challenge", methods=["POST"])
+@pa3.route("/challenge", methods=["POST"])
 def cpa_challenge_api():
     cpa = CPA()
     data = request.get_json(force=True)
@@ -91,7 +91,7 @@ def cpa_challenge_api():
     })
 
 
-@pa3.route("/cpa/oracle", methods=["POST"])
+@pa3.route("/oracle", methods=["POST"])
 def cpa_oracle_api():
     cpa = CPA()
     data = request.get_json(force=True)
@@ -111,7 +111,7 @@ def cpa_oracle_api():
     })
 
 
-@pa3.route("/cpa/guess", methods=["POST"])
+@pa3.route("/guess", methods=["POST"])
 def cpa_guess_api():
     data = request.get_json(force=True)
 
@@ -131,7 +131,7 @@ def cpa_guess_api():
     })
 
 
-@pa3.route("/cpa/simulate", methods=["POST"])
+@pa3.route("/simulate", methods=["POST"])
 def cpa_simulate_api():
     data = request.get_json(force=True)
     rounds = int(data.get("rounds", 1))
@@ -143,7 +143,7 @@ def cpa_simulate_api():
     return jsonify(result)
 
 
-@pa3.route("/cpa/rounds", methods=["POST"])
+@pa3.route("/rounds", methods=["POST"])
 def cpa_rounds_api():
     data = request.get_json(force=True)
     rounds = int(data.get("rounds", 20))
