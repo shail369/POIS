@@ -7,11 +7,9 @@ export default function PA1Panel() {
   const [bits, setBits] = useState("");
   const [stats, setStats] = useState(null);
 
-  // PA#1b backward direction state
+  // PA#1b — minimal hardness demo state (supports 1b.md written argument)
   const [owfFromPrgResult, setOwfFromPrgResult] = useState(null);
   const [owfFromPrgLoading, setOwfFromPrgLoading] = useState(false);
-  const [distinguisherY, setDistinguisherY] = useState("");
-  const [distinguisherResult, setDistinguisherResult] = useState(null);
   const [activeTab, setActiveTab] = useState("forward"); // 'forward' | 'backward'
 
   const hexToDecimal = (hex) => {
@@ -47,7 +45,7 @@ export default function PA1Panel() {
     setStats(data);
   };
 
-  // PA#1b — OWF from PRG hardness demo
+  // PA#1b — minimal inversion hardness demo (supports 1b.md proof)
   const runOwfFromPrg = async () => {
     setOwfFromPrgLoading(true);
     setOwfFromPrgResult(null);
@@ -55,32 +53,13 @@ export default function PA1Panel() {
       const res = await fetch("http://localhost:5000/owf-from-prg", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "hardness", n_seeds: 5, brute_force_budget: 10000, output_bits: 64 }),
+        body: JSON.stringify({ n_trials: 5, budget: 10000 }),
       });
-      const data = await res.json();
-      setOwfFromPrgResult(data);
+      setOwfFromPrgResult(await res.json());
     } catch (e) {
       setOwfFromPrgResult({ error: String(e) });
     }
     setOwfFromPrgLoading(false);
-  };
-
-  // PA#1b — distinguisher demo
-  const runDistinguisher = async () => {
-    try {
-      const body = distinguisherY
-        ? { mode: "distinguisher", y: distinguisherY, output_bits: 64 }
-        : { mode: "distinguisher", output_bits: 64 };      // server generates y
-      const res = await fetch("http://localhost:5000/owf-from-prg", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      setDistinguisherResult(data);
-    } catch (e) {
-      setDistinguisherResult({ error: String(e) });
-    }
   };
 
   useEffect(() => { fetchPRG(); }, [seed, length]);
@@ -156,11 +135,20 @@ export default function PA1Panel() {
       {/* ──────────────── BACKWARD TAB ──────────────── */}
       {activeTab === "backward" && (
         <>
-          <div className="output-box" style={{ marginBottom: 12, fontSize: "0.85rem", color: "#aaa" }}>
-            <b>Claim:</b> f(s) = G(s) is a OWF. Any adversary inverting f would break PRG security
-            (distinguish G(s) from random). The demo below confirms random brute-force fails.
+          {/* The real deliverable for PA#1b is the written argument in 1b.md */}
+          <div className="output-box" style={{ marginBottom: 12, fontSize: "0.85rem", color: "#aaa", lineHeight: 1.7 }}>
+            <b>PA#1b Claim:</b> f(s) = G(s) is a one-way function.<br/>
+            <b>Proof sketch (reduction to PRG security):</b> Suppose PPT adversary A inverts f
+            with non-negligible probability. Build distinguisher D: given y, run A(y)→s′;
+            if G(s′)=y output "PRG", else "Random". When y=G(s), A succeeds w/ non-negl →
+            D correct. When y uniform, G(s′)≠y w.o.p. (image is small) → D correct.
+            D breaks PRG security — contradiction. <b>∴ f is OWF. ∎</b><br/>
+            <span style={{color:"#64748b", fontSize:"0.8rem"}}>
+              Full formal proof: <code>backend/PA1/1b.md</code>
+            </span>
           </div>
 
+          {/* Minimal concrete demo — supports the written argument */}
           <button onClick={runOwfFromPrg} disabled={owfFromPrgLoading}>
             {owfFromPrgLoading ? "Running..." : "Run Hardness Demo (5 seeds × 10,000 guesses)"}
           </button>
@@ -169,56 +157,30 @@ export default function PA1Panel() {
             <div className="stats">
               <p>
                 <b>Hardness confirmed:</b>{" "}
-                {owfFromPrgResult.hardness_confirmed ? "✅ YES" : "⚠️ No (rare collision!)"}
+                {(owfFromPrgResult.hardness_ok ?? owfFromPrgResult.hardness_confirmed)
+                  ? "✅ YES — brute-force failed for all seeds"
+                  : "⚠️ No (rare collision!)"}
               </p>
-              <p>
-                Seeds tried: {owfFromPrgResult.n_seeds} | Budget: {owfFromPrgResult.brute_force_budget} |
-                Space: 2³² ({owfFromPrgResult.seed_space?.toLocaleString()})
+              <p style={{ fontSize: "0.82rem", color: "#888" }}>
+                Budget: {(owfFromPrgResult.budget ?? owfFromPrgResult.brute_force_budget)?.toLocaleString()} guesses
+                out of 2³² = {owfFromPrgResult.seed_space?.toLocaleString()} possible seeds. &nbsp;
+                Adversary success: {owfFromPrgResult.success_count ?? owfFromPrgResult.found_count}/
+                {owfFromPrgResult.n_trials ?? owfFromPrgResult.n_seeds}
               </p>
               {owfFromPrgResult.results?.map((r, i) => (
                 <div key={i} className="output-box" style={{ marginTop: 4, fontSize: "0.8rem" }}>
-                  s = {r.s} | y = {r.y?.slice(0, 20)}… | inversion:{" "}
-                  {r.brute_force_found ? `⚠️ found at ${r.found_at}` : "❌ not found"}
+                  s = {r.s} &nbsp;| y = {(r.y_prefix ?? r.y)?.slice(0, 20)}… &nbsp;|
+                  inversion: {(r.inverted ?? r.brute_force_found) ? `⚠️ found at ${r.found_at}` : "❌ not found"}
                 </div>
               ))}
               <p style={{ fontSize: "0.8rem", color: "#888", marginTop: 8 }}>
-                {owfFromPrgResult.argument}
+                {owfFromPrgResult.conclusion ?? owfFromPrgResult.argument}
               </p>
             </div>
           )}
 
-          <hr style={{ margin: "20px 0", borderColor: "#333" }} />
-
-          <h4>Distinguisher D (reduction)</h4>
-          <div style={{ fontSize: "0.85rem", color: "#aaa", marginBottom: 8 }}>
-            D(y): try to find s′ with G(s′) = y. If found → label "PRG"; else → "Random".
-          </div>
-          <label>
-            y (bit-string, leave blank to auto-generate from PRG)
-            <input
-              value={distinguisherY}
-              onChange={(e) => setDistinguisherY(e.target.value)}
-              placeholder="Leave blank to auto-generate"
-            />
-          </label>
-          <button onClick={runDistinguisher}>Run Distinguisher D</button>
-
-          {distinguisherResult && !distinguisherResult.error && (
-            <div className="stats">
-              <p>
-                <b>D labels:</b>{" "}
-                <span style={{ color: distinguisherResult.distinguisher_label === "PRG" ? "#6cf" : "#fa0" }}>
-                  {distinguisherResult.distinguisher_label}
-                </span>
-              </p>
-              <p style={{ fontSize: "0.8rem" }}>{distinguisherResult.explanation}</p>
-            </div>
-          )}
-
-          {(owfFromPrgResult?.error || distinguisherResult?.error) && (
-            <p style={{ color: "red" }}>
-              Error: {owfFromPrgResult?.error || distinguisherResult?.error}
-            </p>
+          {owfFromPrgResult?.error && (
+            <p style={{ color: "#ef4444" }}>Error: {owfFromPrgResult.error}</p>
           )}
         </>
       )}

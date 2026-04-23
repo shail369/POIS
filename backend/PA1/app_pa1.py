@@ -9,7 +9,7 @@ POST /prg           → generate PRG bits from seed
 POST /test          → NIST statistical tests on provided bit-string
 POST /owf/evaluate  → f(x) = g^x mod p
 POST /owf/hardness  → verify_hardness demo (brute-force inversion)
-POST /owf-from-prg  → PA#1b backward: OWF ← PRG hardness + distinguisher demo
+POST /owf-from-prg  → PA#1b: minimal inversion hardness demo (supports 1b.md argument)
 """
 
 import os
@@ -23,7 +23,9 @@ from flask import Blueprint, request, jsonify
 
 from owf import DLP_OWF
 from prg import PRG
-from owf_from_prg import OWF_from_PRG
+# OWF_from_PRG class was over-engineered for spec; replaced with minimal demo.
+# The formal proof lives in 1b.md. Only a brief inline demo is needed.
+from owf_from_prg import demo_inversion_hardness
 from tests import frequency_test, runs_test, serial_test
 
 pa1 = Blueprint("pa1", __name__)
@@ -130,47 +132,38 @@ def owf_hardness_api():
 
 # ---------------------------------------------------------------------------
 # PA#1b backward direction: OWF from PRG
+# Formal proof is in 1b.md. This endpoint runs a minimal concrete demo.
+# The full OWF_from_PRG class + distinguisher were over-engineered and have
+# been commented out in owf_from_prg.py.
 # ---------------------------------------------------------------------------
 
 @pa1.route("/owf-from-prg", methods=["POST"])
 def owf_from_prg_api():
     """
-    Demonstrates the backward reduction OWF ← PRG.
-
-    Two sub-operations:
-      mode = "hardness"      → run demonstrate_hardness() and return stats
-      mode = "distinguisher" → run build_distinguisher() on a given y
+    PA#1b: run the minimal inversion hardness demo.
+    Picks 5 random seeds from [0, 2^32), computes y = G(s),
+    brute-forces with budget=10,000 guesses, confirms adversary fails.
+    Supports the written proof in 1b.md.
     """
     try:
-        data = request.get_json(force=True)
-        mode = data.get("mode", "hardness")
-        owf_prg = OWF_from_PRG()
-
-        if mode == "hardness":
-            n_seeds  = int(data.get("n_seeds", 5))
-            budget   = int(data.get("brute_force_budget", 10_000))
-            out_bits = int(data.get("output_bits", 64))
-            result   = owf_prg.demonstrate_hardness(
-                n_seeds=n_seeds,
-                brute_force_budget=budget,
-                output_bits=out_bits,
-            )
-            return jsonify(result)
-
-        elif mode == "distinguisher":
-            y        = data.get("y", "")
-            out_bits = int(data.get("output_bits", 64))
-            if not y:
-                # Generate a fresh PRG output to feed to D
-                import secrets as _sec
-                s = _sec.randbelow(2**32)
-                y = owf_prg.evaluate(s, out_bits)
-
-            result = owf_prg.build_distinguisher(y, output_bits=out_bits)
-            return jsonify(result)
-
-        else:
-            return jsonify({"error": f"Unknown mode '{mode}'. Use 'hardness' or 'distinguisher'."}), 400
-
+        data    = request.get_json(force=True)
+        n       = int(data.get("n_trials", 5))
+        budget  = int(data.get("budget", 10_000))
+        result  = demo_inversion_hardness(n_trials=n, budget=budget)
+        return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# [COMMENTED OUT] Full OWF_from_PRG class routes — replaced by minimal demo above
+# @pa1.route("/owf-from-prg", methods=["POST"])
+# def owf_from_prg_api_old():
+#     try:
+#         data = request.get_json(force=True)
+#         mode = data.get("mode", "hardness")
+#         owf_prg = OWF_from_PRG()
+#         if mode == "hardness":
+#             ...
+#         elif mode == "distinguisher":
+#             ...
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
