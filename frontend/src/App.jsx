@@ -3,6 +3,8 @@ import PA1Panel from "./components/PA1Panel";
 import PA2Panel from "./components/PA2Panel";
 import PA3Panel from "./components/PA3Panel";
 import PA4Panel from "./components/PA4Panel";
+import PA5Panel from "./components/PA5Panel";
+import PA6Panel from "./components/PA6Panel";
 
 function App() {
   const [view, setView] = useState("PA1");
@@ -27,6 +29,14 @@ function App() {
         <button onClick={() => setView("PA4")}>
           Modes (PA#4)
         </button>
+
+        <button onClick={() => setView("PA5")}>
+          MAC (PA#5)
+        </button>
+
+        <button onClick={() => setView("PA6")}>
+          CCA (PA#6)
+        </button>
       </div>
 
       {/* Conditional Rendering */}
@@ -34,6 +44,8 @@ function App() {
   {view === "PA2" && <PA2Panel />}
   {view === "PA3" && <PA3Panel />}
   {view === "PA4" && <PA4Panel />}
+  {view === "PA5" && <PA5Panel />}
+  {view === "PA6" && <PA6Panel />}
 
     </div>
   );

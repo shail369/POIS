@@ -1,22 +1,15 @@
-def normalize_key(key):
-    if isinstance(key, int):
-        return key
-    if key is None:
-        return 0
-    if isinstance(key, str):
-        key = key.strip()
-        if key.startswith("0x"):
-            return int(key, 16)
-        try:
-            return int(key, 16)
-        except ValueError:
-            return int(key)
-    return int(key)
+"""
+PA3/cpa_utils.py — forwards to shared.utils (backward-compatible shim).
+The whole-backend canonical source is backend/shared/utils.py.
+"""
+import os
+import sys
 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_SHARED = os.path.join(_HERE, "..", "shared")
+if _SHARED not in sys.path:
+    sys.path.insert(0, _SHARED)
 
-def int_to_bits(value, width):
-    return format(value, f"0{width}b")
+from utils import normalize_key, int_to_bits, xor_bytes, pkcs7_pad, pkcs7_unpad
 
-
-def xor_bytes(a, b):
-    return bytes(x ^ y for x, y in zip(a, b))
+__all__ = ["normalize_key", "int_to_bits", "xor_bytes", "pkcs7_pad", "pkcs7_unpad"]

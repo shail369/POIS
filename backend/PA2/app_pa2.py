@@ -1,50 +1,181 @@
-from flask import Blueprint, request, jsonify
-import sys
-import os
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+"""
+PA2/app_pa2.py
+==============
+Flask blueprint for PA#2 — Pseudorandom Functions (GGM Tree Construction).
 
-sys.path.insert(0, os.path.join(BASE_DIR, "../PA1"))
+Routes
+------
+POST /prf           → GGM PRF: compute F(k, x) and return tree nodes
+POST /prf/aes       → AES PRF (pure-Python): compute F_k(x) = AES_k(x)
+POST /prf/distinguish → distinguishing game: PRF vs random oracle (q queries)
+POST /prg-from-prf  → PA#2b backward: PRF → PRG, runs statistical test
+"""
+
+import os
+import sys
+import random
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PA1  = os.path.join(_HERE, "..", "PA1")
+_BASE = os.path.join(_HERE, "..")
+
+for _p in [_HERE, _PA1, _BASE]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from flask import Blueprint, request, jsonify
 
 from owf import DLP_OWF
 from prg import PRG
 from prf import GGM_PRF
+from aes_prf import AES_PRF
+from prg_from_prf import PRG_from_PRF
+from distinguisher import distinguishing_game, prg_from_prf_statistical_test
 
 pa2 = Blueprint("pa2", __name__)
 
+
+# ---------------------------------------------------------------------------
+# GGM PRF — with tree trace
+# ---------------------------------------------------------------------------
+
 @pa2.route("/prf", methods=["POST"])
 def prf_api():
+    try:
+        data = request.get_json(force=True)
+        k_hex = data.get("key", "1e240")     # default = 123456 in hex
+        x     = data.get("x", "0101")
 
-    data = request.get_json(force=True)
+        k = int(k_hex, 16) if k_hex else 123456
 
-    k = int(data.get("key", "123"), 16)
-    x = data.get("x", "0101")
+        # Build the full binary tree up to depth len(x).
+        # Each level contains ALL 2^i nodes (greyed-out nodes included for UI).
+        owf = DLP_OWF()
+        prg_obj = PRG(owf)
 
-    prf = GGM_PRF()
+        levels = []
+        current_level = [k]
 
-    tree = []
-    states = [k]
+        for bit in x:
+            next_level = []
+            level_data = []
+            for s in current_level:
+                prg_obj.seed(s)
+                out = prg_obj.next_bits(128)
+                left  = int(out[:64],  2)
+                right = int(out[64:], 2)
+                next_level.extend([left, right])
+                level_data.append({"state": s, "left": left, "right": right})
+            levels.append(level_data)
+            current_level = next_level
 
-    for bit in x:
-        next_states = []
+        prf_obj = GGM_PRF()
+        result  = prf_obj.F(k, x)
 
-        for s in states:
-            prg = PRG(DLP_OWF())
-            prg.seed(s)
+        return jsonify({
+            "key":    k,
+            "x":      x,
+            "tree":   levels,
+            "result": result,
+        })
 
-            out = prg.next_bits(128)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-            left = int(out[:64], 2)
-            right = int(out[64:], 2)
 
-            next_states.append(left)
-            next_states.append(right)
+# ---------------------------------------------------------------------------
+# AES PRF (pure-Python, no library)
+# ---------------------------------------------------------------------------
 
-        tree.append(next_states)
-        states = next_states
+@pa2.route("/prf/aes", methods=["POST"])
+def prf_aes_api():
+    """
+    Concrete PRF using pure-Python AES-128.
+    Demonstrates the AES plug-in mentioned in the spec.
+    """
+    try:
+        data    = request.get_json(force=True)
+        key_hex = data.get("key", "2b7e151628aed2a6abf7158809cf4f3c")  # FIPS KAT key
+        x_hex   = data.get("x",   "3243f6a8885a308d313198a2e0370734")
 
-    result = prf.F(k, x)
+        prf = AES_PRF(key_hex)
+        ct  = prf.F(x_hex)
 
-    return jsonify({
-        "tree": tree,
-        "result": result
-    })
+        return jsonify({
+            "key":    key_hex,
+            "x":      x_hex,
+            "result": ct,
+            "note":   "F_k(x) = AES_k(x) — pure-Python AES, no external library",
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# PA#2 distinguishing game
+# ---------------------------------------------------------------------------
+
+@pa2.route("/prf/distinguish", methods=["POST"])
+def prf_distinguish_api():
+    """
+    Run the IND-PRF distinguishing game:
+    query GGM PRF and a random oracle on q random inputs,
+    confirm no statistical difference.
+    """
+    try:
+        data = request.get_json(force=True)
+        q    = int(data.get("queries", 100))
+
+        result = distinguishing_game(q=q)
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# PA#2b backward: PRF → PRG & statistical test
+# ---------------------------------------------------------------------------
+
+@pa2.route("/prg-from-prf", methods=["POST"])
+def prg_from_prf_api():
+    """
+    Backward direction: PRF → PRG via G(s) = F_s(0^n) || F_s(1^n).
+    Returns the concatenated hex output and NIST test results.
+    """
+    try:
+        data   = request.get_json(force=True)
+        seed   = int(data.get("seed", 123456))
+        n_bits = int(data.get("n_bits", 1024))
+
+        prg    = PRG_from_PRF()
+        # Build enough bits from successive seeds
+        bits   = ""
+        current_seed = seed
+        outputs = []
+        while len(bits) < n_bits:
+            out_hex = prg.generate(current_seed, n=8)
+            out_bits = bin(int(out_hex, 16))[2:].zfill(len(out_hex) * 4)
+            bits += out_bits
+            outputs.append(out_hex)
+            current_seed = int(out_hex[-8:], 16) if len(out_hex) >= 8 else current_seed + 1
+
+        bits = bits[:n_bits]
+
+        from tests import frequency_test, runs_test
+        freq = frequency_test(bits)
+        runs = runs_test(bits)
+
+        return jsonify({
+            "seed":      seed,
+            "n_bits":    n_bits,
+            "sample_outputs": outputs[:4],
+            "frequency": freq,
+            "runs":      runs,
+            "pass":      freq["pass"] and runs["pass"],
+            "note":      "G(s) = F_s(0^n) || F_s(1^n) — PRF used as PRG (backward direction)",
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
