@@ -22,7 +22,7 @@ _BASE = os.path.dirname(os.path.abspath(__file__))
 
 # Register all PA directories + shared on sys.path so blueprints can import
 # their own modules with bare names (e.g. `from owf import DLP_OWF`).
-for _sub in ["shared", "PA1", "PA2", "PA3", "PA4", "PA5", "PA6"]:
+for _sub in ["shared", "PA1", "PA2", "PA3", "PA4", "PA5", "PA6", "PA7", "PA8"]:
     _p = os.path.join(_BASE, _sub)
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -37,6 +37,8 @@ from PA3.app_pa3 import pa3
 from PA4.app_pa4 import pa4
 from PA5.app_pa5 import pa5
 from PA6.app_pa6 import pa6
+from PA7.app_pa7 import pa7
+from PA8.app_pa8 import pa8
 
 app = Flask(__name__)
 CORS(app)
@@ -47,6 +49,8 @@ app.register_blueprint(pa3)
 app.register_blueprint(pa4)
 app.register_blueprint(pa5)
 app.register_blueprint(pa6)
+app.register_blueprint(pa7)
+app.register_blueprint(pa8)
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

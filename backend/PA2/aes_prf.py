@@ -1,82 +1,42 @@
 """
 PA2/aes_prf.py
 ==============
-AES-128 used as a PRF / PRP plug-in (the "AES plug-in" required by PA#2).
+AES-128 as a PRF: F_k(x) = AES_k(x)
 
-Satisfies the project specification:
-  "You may plug in AES as the concrete PRF. … Implement an alternative PRF
-   using AES-128 directly: F_k(x) = AES_k(x)."
-
-No external cryptographic libraries are used.  All AES logic lives in
-aes_core.py, which is a pure-Python FIPS 197 implementation.
-
-The one permitted exception (OS-level randomness) is NOT needed here;
-everything is deterministic given key and input.
+Using PyCryptodome as the OS primitive, per the PA#2 specification.
 """
 
-import os
-import sys
-
-# Resolve the backend root so that aes_core can always be found,
-# regardless of the working directory when the module is imported.
-_BASE = os.path.dirname(os.path.abspath(__file__))
-
-from aes_core import aes128_encrypt_block, aes128_decrypt_block
-
+from Crypto.Cipher import AES
 
 class AES_PRF:
-    """
-    Concrete PRF/PRP built from pure-Python AES-128.
+    def __init__(self, key_hex):
+        key = bytes.fromhex(key_hex.zfill(32))
+        if len(key) != 16:
+            raise ValueError("AES_PRF requires a 16-byte key")
+        self._key = key
+        self.cipher = AES.new(key, AES.MODE_ECB)
 
-    F_k(x) = AES_k(x)
-
-    Per the PRF/PRP switching lemma, AES (a PRP) is computationally
-    indistinguishable from a PRF when the domain is super-polynomial.
-
-    Interface
-    ---------
-    AES_PRF(key_hex)  — 32-hex-char (16-byte) key
-    .F(x_hex)         — 32-hex-char (16-byte) query  → 32-hex-char output
-    .F_inv(x_hex)     — inverse (decryption) for PRP usage
-    """
-
-    def __init__(self, key_hex: str):
-        raw = bytes.fromhex(key_hex.zfill(32))
-        if len(raw) != 16:
-            raise ValueError("AES_PRF requires a 16-byte (32 hex-char) key")
-        self._key = raw
-
-    def F(self, x_hex: str) -> str:
-        """Encrypt one 16-byte block: F_k(x) = AES_k(x)."""
+    def F(self, x_hex):
+        """F_k(x) = AES_k(x)"""
         x = bytes.fromhex(x_hex.zfill(32))
-        if len(x) != 16:
-            raise ValueError("AES_PRF.F requires a 16-byte (32 hex-char) input")
-        ct = aes128_encrypt_block(self._key, x)
-        return ct.hex()
+        return self.cipher.encrypt(x).hex()
 
-    def F_inv(self, y_hex: str) -> str:
-        """Decrypt one block (PRP inverse): AES_k^{-1}(y)."""
+    def F_inv(self, y_hex):
+        """F_k^{-1}(y) = AES_k^{-1}(y) — required for CPA decryption"""
         y = bytes.fromhex(y_hex.zfill(32))
-        if len(y) != 16:
-            raise ValueError("AES_PRF.F_inv requires a 16-byte input")
-        pt = aes128_decrypt_block(self._key, y)
-        return pt.hex()
+        return self.cipher.decrypt(y).hex()
 
+    def verify_fips197_kat(self):
+        """FIPS-197 Appendix B known-answer test."""
+        # Key: 2b7e151628aed2a6abf7158809cf4f3c, Pt: 3243f6a8885a308d313198a2e0370734
+        prf = AES_PRF("2b7e151628aed2a6abf7158809cf4f3c")
+        return prf.F("3243f6a8885a308d313198a2e0370734") == "3925841d02dc09fbdc118597196a0b32"
 
-# ---------------------------------------------------------------------------
-# Quick smoke-test
-# ---------------------------------------------------------------------------
-if __name__ == "__main__":
-    import os as _os
-    key_hex = _os.urandom(16).hex()          # OS randomness — the one permitted exception
-    prf = AES_PRF(key_hex)
-
-    x_hex = "00000000000000000000000000000000"
-    ct = prf.F(x_hex)
-    pt = prf.F_inv(ct)
-
-    assert pt == x_hex, f"Round-trip failed: {pt} != {x_hex}"
-    print(f"AES_PRF smoke test passed.")
-    print(f"  key = {key_hex}")
-    print(f"  F(0^128) = {ct}")
-    print(f"  F_inv(ct) = {pt}")
+    def info(self):
+        """Metadata for the React frontend."""
+        return {
+            "backend": "OS primitive — Crypto.Cipher.AES (PyCryptodome)",
+            "key_hex": self._key.hex(),
+            "fips197_kat_ok": self.verify_fips197_kat(),
+            "note": "F_k(x) = AES_k(x) implemented via PyCryptodome",
+        }

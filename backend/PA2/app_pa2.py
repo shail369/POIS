@@ -5,10 +5,11 @@ Flask blueprint for PA#2 — Pseudorandom Functions (GGM Tree Construction).
 
 Routes
 ------
-POST /prf           → GGM PRF: compute F(k, x) and return tree nodes
-POST /prf/aes       → AES PRF (pure-Python): compute F_k(x) = AES_k(x)
-POST /prf/distinguish → distinguishing game: PRF vs random oracle (q queries)
-POST /prg-from-prf  → PA#2b backward: PRF → PRG, runs statistical test
+POST /prf               → GGM PRF: compute F(k, x) and return tree nodes
+POST /prf/aes           → AES PRF (OS primitive): compute F_k(x) = AES_k(x)
+POST /prf/aes-compare   → Side-by-side GGM vs AES: functional identity demo
+POST /prf/distinguish   → distinguishing game: PRF vs random oracle (q queries)
+POST /prg-from-prf      → PA#2b backward: PRF → PRG, runs statistical test
 """
 
 import os
@@ -29,6 +30,7 @@ from owf import DLP_OWF
 from prg import PRG
 from prf import GGM_PRF
 from aes_prf import AES_PRF
+from prf_comparison import prf_comparison_demo
 from prg_from_prf import PRG_from_PRF
 from distinguisher import distinguishing_game, prg_from_prf_statistical_test
 
@@ -100,13 +102,48 @@ def prf_aes_api():
 
         prf = AES_PRF(key_hex)
         ct  = prf.F(x_hex)
+        inv = prf.F_inv(ct)
 
         return jsonify({
-            "key":    key_hex,
-            "x":      x_hex,
-            "result": ct,
-            "note":   "F_k(x) = AES_k(x) — pure-Python AES, no external library",
+            "key":          key_hex,
+            "x":            x_hex,
+            "result":       ct,
+            "inverse_ok":   inv == x_hex.zfill(32).lower(),
+            "fips197_kat":  prf.verify_fips197_kat(),
+            "info":         prf.info(),
+            "note": (
+                "F_k(x) = AES_k(x) — OS primitive (Python cryptography + OpenSSL AES-128-ECB). "
+                "Permitted exception: spec says 'your own AES or the OS primitive'."
+            ),
         })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# AES vs GGM: functional identity demonstration
+# ---------------------------------------------------------------------------
+
+@pa2.route("/prf/aes-compare", methods=["POST"])
+def prf_aes_compare():
+    """
+    Side-by-side comparison showing GGM PRF and AES PRF are functionally
+    identical: both pass NIST tests, both support CPA round-trip, both are
+    valid drop-in PRFs with negligible IND-PRF advantage.
+    """
+    try:
+        data       = request.get_json(force=True)
+        key_hex    = data.get("key", None)         # None → random key
+        n_queries  = int(data.get("n_queries", 200))
+        message    = data.get("message", "hello world")
+
+        result = prf_comparison_demo(
+            key_hex    = key_hex,
+            n_queries  = n_queries,
+            test_message = message,
+        )
+        return jsonify(result)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -5,6 +5,8 @@ import PA3Panel from "./components/PA3Panel";
 import PA4Panel from "./components/PA4Panel";
 import PA5Panel from "./components/PA5Panel";
 import PA6Panel from "./components/PA6Panel";
+import PA7Panel from "./components/PA7Panel";
+import PA8Panel from "./components/PA8Panel";
 
 function App() {
   const [view, setView] = useState("PA1");
@@ -37,6 +39,14 @@ function App() {
         <button onClick={() => setView("PA6")}>
           CCA (PA#6)
         </button>
+
+        <button onClick={() => setView("PA7")}>
+          MD Hash (PA#7)
+        </button>
+
+        <button onClick={() => setView("PA8")}>
+          CRHF (PA#8)
+        </button>
       </div>
 
       {/* Conditional Rendering */}
@@ -46,6 +56,8 @@ function App() {
   {view === "PA4" && <PA4Panel />}
   {view === "PA5" && <PA5Panel />}
   {view === "PA6" && <PA6Panel />}
+  {view === "PA7" && <PA7Panel />}
+  {view === "PA8" && <PA8Panel />}
 
     </div>
   );

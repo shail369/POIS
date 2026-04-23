@@ -8,10 +8,9 @@ export default function PA2Panel() {
   const [result, setResult] = useState("");
   const [activeTab, setActiveTab] = useState("ggm"); // 'ggm' | 'aes' | 'distinguish' | 'backward'
 
-  // AES PRF state
-  const [aesKey, setAesKey]   = useState("2b7e151628aed2a6abf7158809cf4f3c");
-  const [aesX, setAesX]       = useState("3243f6a8885a308d313198a2e0370734");
-  const [aesResult, setAesResult] = useState(null);
+  // AES/Comparison state
+  const [aesCompareResult, setAesCompareResult] = useState(null);
+  const [aesLoading, setAesLoading] = useState(false);
 
   // Distinguishing game state
   const [distQueries, setDistQueries] = useState(100);
@@ -37,16 +36,17 @@ export default function PA2Panel() {
     } catch { setResult("(API unreachable)"); }
   };
 
-  // ─── AES PRF ───
-  const fetchAESPRF = async () => {
+  // ─── AES Comparison ───
+  const fetchAESCompare = async () => {
+    setAesLoading(true); setAesCompareResult(null);
     try {
-      const res  = await fetch("http://localhost:5000/prf/aes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: aesKey, x: aesX }),
+      const res = await fetch("http://localhost:5000/prf/aes-compare", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "test msg", n_queries: 100 }),
       });
-      setAesResult(await res.json());
-    } catch (e) { setAesResult({ error: String(e) }); }
+      setAesCompareResult(await res.json());
+    } catch (e) { setAesCompareResult({ error: String(e) }); }
+    setAesLoading(false);
   };
 
   // ─── Distinguishing game ───
@@ -88,7 +88,7 @@ export default function PA2Panel() {
 
   const TABS = [
     { id: "ggm",        label: "GGM PRF (PA#2a)" },
-    { id: "aes",        label: "AES PRF (Pure-Python)" },
+    { id: "aes",        label: "AES PRF (Substitute) Comparison" },
     { id: "distinguish",label: "Distinguishing Game" },
     { id: "backward",   label: "PRG ← PRF (PA#2b)" },
   ];
@@ -142,29 +142,55 @@ export default function PA2Panel() {
         </>
       )}
 
-      {/* ── AES PRF (pure-Python) ── */}
+      {/* ── AES PRF (OS primitive) ── */}
       {activeTab === "aes" && (
         <>
           <div className="output-box" style={{ fontSize: "0.82rem", color: "#aaa", marginBottom: 12 }}>
-            <b>AES-128 as PRF</b>: F_k(x) = AES_k(x). Implemented in pure Python (FIPS 197), 
-            no external libraries. Verified against FIPS 197 Appendix B KAT.
+            <b>AES-128 as PRF</b>: F_k(x) = AES_k(x) via <code>PyCryptodome</code>. 
+            Proves functional identity by replacing GGM in downstream CPA encryption, confirming round-trip correctness and identical passing NIST randomness stats.
           </div>
-          <label>
-            Key (32 hex chars = 16 bytes)
-            <input value={aesKey} onChange={(e) => setAesKey(e.target.value)} style={{ fontFamily: "monospace" }} />
-          </label>
-          <label>
-            Input x (32 hex chars = 16 bytes)
-            <input value={aesX} onChange={(e) => setAesX(e.target.value)} style={{ fontFamily: "monospace" }} />
-          </label>
-          <button onClick={fetchAESPRF}>Compute F_k(x) = AES_k(x)</button>
-          {aesResult && !aesResult.error && (
-            <div className="stats">
-              <p><b>F_k(x)</b> = <code>{aesResult.result}</code></p>
-              <p style={{ fontSize: "0.8rem", color: "#888" }}>{aesResult.note}</p>
+          
+          <button onClick={fetchAESCompare} disabled={aesLoading}>
+            {aesLoading ? "Generating bits & running NIST tests..." : "Run Functional Identity Demo"}
+          </button>
+
+          {aesCompareResult && !aesCompareResult.error && (
+            <div className="stats" style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "15px" }}>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                {/* GGM Card */}
+                <div style={{ background: "#1c0f2e", border: "1.5px solid #7c3aed", borderRadius: 10, padding: 14 }}>
+                  <h4 style={{ margin: "0 0 10px 0", color: "#c4b5fd" }}>GGM PRF</h4>
+                  <div style={{ fontSize: "0.85em", color: "#ddd" }}>
+                    <p><b>CPA Round-Trip:</b> {aesCompareResult.prf_results.ggm.roundtrip_ok ? '✅ pass' : '❌ fail'}</p>
+                    <p style={{ marginTop: "4px" }}><b>Raw Encrypted:</b> <code style={{color:"#a78bfa"}}>{aesCompareResult.prf_results.ggm.encrypted.slice(0, 16)}...</code></p>
+                    <p><b>Raw Decrypted:</b> <code>{aesCompareResult.prf_results.ggm.decrypted}</code></p>
+                    <hr style={{ borderColor: "#7c3aed44", margin: "10px 0" }}/>
+                    <p><b>NIST Freq:</b> p = {aesCompareResult.prf_results.ggm.frequency_test.p_value} ({aesCompareResult.prf_results.ggm.frequency_test.pass ? '✅' : '❌'})</p>
+                    <p><b>NIST Runs:</b> p = {aesCompareResult.prf_results.ggm.runs_test.p_value} ({aesCompareResult.prf_results.ggm.runs_test.pass ? '✅' : '❌'})</p>
+                  </div>
+                </div>
+
+                {/* AES Card */}
+                <div style={{ background: "#0a1c1a", border: "1.5px solid #0d9488", borderRadius: 10, padding: 14 }}>
+                  <h4 style={{ margin: "0 0 10px 0", color: "#5eead4" }}>AES PRF (PyCryptodome)</h4>
+                  <div style={{ fontSize: "0.85em", color: "#ccc" }}>
+                    <p><b>CPA Round-Trip:</b> {aesCompareResult.prf_results.aes.roundtrip_ok ? '✅ pass' : '❌ fail'}</p>
+                    <p style={{ marginTop: "4px" }}><b>Raw Encrypted:</b> <code style={{color:"#5eead4"}}>{aesCompareResult.prf_results.aes.encrypted.slice(0, 16)}...</code></p>
+                    <p><b>Raw Decrypted:</b> <code>{aesCompareResult.prf_results.aes.decrypted}</code></p>
+                    <hr style={{ borderColor: "#0d948844", margin: "10px 0" }}/>
+                    <p><b>NIST Freq:</b> p = {aesCompareResult.prf_results.aes.frequency_test.p_value} ({aesCompareResult.prf_results.aes.frequency_test.pass ? '✅' : '❌'})</p>
+                    <p><b>NIST Runs:</b> p = {aesCompareResult.prf_results.aes.runs_test.p_value} ({aesCompareResult.prf_results.aes.runs_test.pass ? '✅' : '❌'})</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ padding: "12px", background: "#1f2937", border: "1px dashed #64748b", borderRadius: "8px", marginTop: "10px" }}>
+                <b style={{color: "#e2e8f0"}}>Conclusion:</b> <span style={{color: "#cbd5e1", fontSize: "0.9rem"}}>{aesCompareResult.conclusion}</span>
+              </div>
             </div>
           )}
-          {aesResult?.error && <p style={{ color: "red" }}>Error: {aesResult.error}</p>}
+          {aesCompareResult?.error && <p style={{ color: "#ef4444", marginTop: 10 }}>Error: {aesCompareResult.error}</p>}
         </>
       )}
 
