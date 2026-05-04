@@ -7,6 +7,8 @@ import PA5Panel  from "./components/PA5Panel";
 import PA6Panel  from "./components/PA6Panel";
 import PA7Panel  from "./components/PA7Panel";
 import PA8Panel  from "./components/PA8Panel";
+import PA9Panel  from "./components/PA9Panel";
+import PA10Panel from "./components/PA10Panel";
 import PA11Panel from "./components/PA11Panel";
 import PA12Panel from "./components/PA12Panel";
 import PA13Panel from "./components/PA13Panel";
@@ -27,6 +29,8 @@ const NAV = [
   { key: "PA6",  label: "CCA (PA#6)",        group: "minicrypt" },
   { key: "PA7",  label: "MD Hash (PA#7)",    group: "minicrypt" },
   { key: "PA8",  label: "CRHF (PA#8)",       group: "minicrypt" },
+  { key: "PA9",  label: "Collision (PA#9)",  group: "minicrypt" },
+  { key: "PA10", label: "HMAC (PA#10)",      group: "minicrypt" },
   { key: "PA13", label: "Primality (PA#13)", group: "cryptomania" },
   { key: "PA14", label: "CRT (PA#14)",       group: "cryptomania" },
   { key: "PA11", label: "DH (PA#11)",        group: "cryptomania" },
@@ -83,13 +87,15 @@ function App() {
       {view === "PA6"  && <PA6Panel />}
       {view === "PA7"  && <PA7Panel />}
       {view === "PA8"  && <PA8Panel />}
-      { view === "PA13" && <PA13Panel /> }
-      { view === "PA14" && <PA14Panel /> }
-      { view === "PA11" && <PA11Panel /> }
-      { view === "PA12" && <PA12Panel /> }
-      { view === "PA15" && <PA15Panel /> }
-      { view === "PA16" && <PA16Panel /> }
-      { view === "PA17" && <PA17Panel /> }
+      {view === "PA9"  && <PA9Panel />}
+      {view === "PA10" && <PA10Panel />}
+      {view === "PA11" && <PA11Panel />}
+      {view === "PA12" && <PA12Panel />}
+      {view === "PA13" && <PA13Panel />}
+      {view === "PA14" && <PA14Panel />}
+      {view === "PA15" && <PA15Panel />}
+      {view === "PA16" && <PA16Panel />}
+      {view === "PA17" && <PA17Panel />}
       {view === "PA18" && <PA18Panel />}
       {view === "PA19" && <PA19Panel />}
       {view === "PA20" && <PA20Panel />}
