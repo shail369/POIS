@@ -22,8 +22,26 @@ _BASE = os.path.dirname(os.path.abspath(__file__))
 
 # Register all PA directories + shared on sys.path so blueprints can import
 # their own modules with bare names (e.g. `from owf import DLP_OWF`).
-for _sub in ["shared", "PA1", "PA2", "PA3", "PA4", "PA5", "PA6", "PA7", "PA8",
-             "PA11", "PA12", "PA13", "PA16", "PA18", "PA19", "PA20"]:
+for _sub in [
+    "shared",
+    "PA1",
+    "PA2",
+    "PA3",
+    "PA4",
+    "PA5",
+    "PA6",
+    "PA7",
+    "PA8",
+    "PA9",
+    "PA10",
+    "PA11",
+    "PA12",
+    "PA13",
+    "PA16",
+    "PA18",
+    "PA19",
+    "PA20",
+]:
     _p = os.path.join(_BASE, _sub)
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -40,6 +58,8 @@ from PA5.app_pa5 import pa5
 from PA6.app_pa6 import pa6
 from PA7.app_pa7 import pa7
 from PA8.app_pa8 import pa8
+from PA9.app_pa9 import pa9
+from PA10.app_pa10 import pa10
 from app_pa11 import pa11
 from app_pa12 import pa12
 from app_pa13 import pa13
@@ -59,6 +79,8 @@ app.register_blueprint(pa5, url_prefix="/pa5")
 app.register_blueprint(pa6, url_prefix="/pa6")
 app.register_blueprint(pa7, url_prefix="/pa7")
 app.register_blueprint(pa8, url_prefix="/pa8")
+app.register_blueprint(pa9, url_prefix="/pa9")
+app.register_blueprint(pa10, url_prefix="/pa10")
 app.register_blueprint(pa11)
 app.register_blueprint(pa12)
 app.register_blueprint(pa13)

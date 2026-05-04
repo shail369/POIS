@@ -501,17 +501,3 @@ export default function PA19Panel() {
     </div>
   );
 }
-
-      </p>
-      <div className="pa-tabs">
-        {TABS.map(t => (
-          <button key={t.id} className={`pa-tab${tab === t.id ? " active" : ""}`}
-            onClick={() => setTab(t.id)}>{t.label}</button>
-        ))}
-      </div>
-      {tab === "demo"    && <AndDemo />}
-      {tab === "truth"   && <TruthTable />}
-      {tab === "privacy" && <PrivacyProof />}
-    </div>
-  );
-}
